@@ -1,71 +1,37 @@
 from flask import Flask, request
 import random
+from pathlib import Path
+import sqlite3
 
 app = Flask(__name__)
 app.json.ensure_ascii = False
 
-about_me = {
-    "name": "Татьяна",
-    "surname": "Глинская",
-    "email": "glintatiana@gmail.com"
-}
-
-quotes = [
-    {
-    "id": 3,
-    "author": "Rick Cook",
-    "text": """Программирование сегодня — это гонка
-    разработчиков программ, стремящихся писать программы с
-    большей и лучшей идиотоустойчивостью, и вселенной, которая
-    пытается создать больше отборных идиотов. Пока вселенная
-    побеждает.""",
-    "rating" : 2
-    },
-    {
-    "id": 5,
-    "author": "Waldi Ravens",
-    "text": """Программирование на С похоже на быстрые танцы на только что отполированном полу людей с острыми бритвами в
-    руках.""",
-    "rating" : 2
-    },
-    {
-    "id": 6,
-    "author": "Mosher’s Law of Software Engineering",
-    "text": """Не волнуйтесь, если что-то не работает. Если бы всё работало, вас бы уволили.""",
-    "rating" : 4
-    },
-    {
-    "id": 8,
-    "author": "Yoggi Berra",
-    "text": """В теории, теория и практика неразделимы. На практике это не так.""",
-    "rating" : 5
-    },
-]
+BASE_DIR = Path(__file__).parent
+path_to_db = BASE_DIR / "store.db" # <- тут путь к БД
 
 field_dict = ['id', 'author', 'text', 'rating']
 valid_rating = [i for i in range(1,6)]
 
-@app.route("/")
-def hello_world():
-    """
-    Обработчик для корневого URL 
-    """
-    return "Hello, World!"
-
-@app.route("/about")
-def about():
-    """
-    Информация по URL /about
-    """
-    return about_me
-
 
 @app.route("/quotes")
 def my_quotes():
-    """
-    Возвращает все цитаты по URL /quotes
-    """
-    return quotes
+    connection = sqlite3.connect(path_to_db)
+
+    cursor = connection.cursor()
+    cursor.execute("SELECT * from quotes")
+    quotes_db = cursor.fetchall() #get list[tuple]
+    cursor.close()
+    connection.close()
+
+    # подготовка данных - нужен список словарей
+    # нужно преобразовать список кортежей в список словарей
+    keys = ("id", "author", "text")
+    quotes = []
+    for quote_db in quotes_db:
+        quote = dict(zip(keys, quote_db))
+        quotes.append(quote)
+
+    return quotes, 200
 
 def get_quote_by_id(quote_id):
     """
