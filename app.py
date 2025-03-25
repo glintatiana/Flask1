@@ -183,7 +183,6 @@ def filter():
     Метод для фильтрации цитат, вовращает массив всех цитат, подходящих под условие поиска
     """
     args = request.args
-    print(args)
     quote_list = []
     fail_flg = 0
 
