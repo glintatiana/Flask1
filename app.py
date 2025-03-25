@@ -26,7 +26,7 @@ quotes = [
     "author": "Waldi Ravens",
     "text": """Программирование на С похоже на быстрые танцы на только что отполированном полу людей с острыми бритвами в
     руках.""",
-    "rating" : 3
+    "rating" : 2
     },
     {
     "id": 6,
@@ -71,9 +71,9 @@ def get_quote_by_id(quote_id):
     """
     Метод для получения цитаты по ID - возвращаем объект целиком
     """
-    for i in quotes:
-        if i['id'] == quote_id:
-            return i
+    for q in quotes:
+        if q['id'] == quote_id:
+            return q
     return {}
 
 @app.route("/quotes/<int:quote_id>")
@@ -83,10 +83,10 @@ def show_quote(quote_id):
     Если цитаты нет - возвращаем 404 
     """
     ans = get_quote_by_id(quote_id)
-    if ans == {}:
-        return f"Quote with id={quote_id} not found", 404
-    else:
+    if ans:
         return ans
+    else:
+        return f"Quote with id={quote_id} not found", 404
 
 @app.route("/quotes/<path:subpath>")
 def show_quote_count(subpath):
@@ -128,9 +128,9 @@ def create_quote():
         data['rating'] = 1
 
     # проверяем, все ли ключи - валидные
-    for i in data:
-        if i not in field_dict:
-            return f"Quote key '{i}' is not valid", 400 
+    for key in data:
+        if key not in field_dict:
+            return f"Quote key '{key}' is not valid", 400 
 
     quotes.append(data)
     return data, 201
@@ -143,21 +143,21 @@ def edit_quote(quote_id):
     new_data = request.json
     
     quote = get_quote_by_id(quote_id)
-    if quote == {}:
+    if not quote:
         return f"Quote with id={quote_id} not found", 404
     else:
-        for j in new_data: # итерируем по всем возможным полям
-            if j not in field_dict:
-               return f"Quote key '{j}' not found", 400 
-            if j == 'id':
-               return f"Quote key '{j}' could not be changed", 400
+        for key in new_data: # итерируем по всем возможным полям
+            if key not in field_dict:
+               return f"Quote key '{key}' not found", 400 
+            if key == 'id':
+               return f"Quote key '{key}' could not be changed", 400
             # подменяем значение, если пользователь хотит изменить на невалидный рейтинг
-            if j == 'rating' and new_data['rating'] not in valid_rating:
+            if key == 'rating' and new_data['rating'] not in valid_rating:
                new_data['rating'] = 1
-            quote[j] = new_data[j] # создали тут объект со всеми изменениями 
+            quote[key] = new_data[key] # создали тут объект со всеми изменениями 
     #т теперь подменяем цитату в словаре
-    for i, v in enumerate(quotes):
-        if v['id'] == quote_id:
+    for i, q in enumerate(quotes):
+        if q['id'] == quote_id:
             quotes[i] = quote
             return quote, 200
     return 'Something gone wrong', 500
@@ -167,14 +167,11 @@ def delete(quote_id):
     """
     Метод для удаления цитаты из списка по её ID через DELETE 
     """
-    quote = get_quote_by_id(quote_id)
-    if quote == {}:
-        return f"Quote with id={quote_id} not found", 404
-    for i, v in enumerate(quotes):
-        if v['id'] == quote_id:
-            quotes.pop(i)
+    for quote in quotes:
+        if quote['id'] == quote_id:
+            quotes.remove(quote)
             return f"Quote with id {quote_id} is deleted.", 200
-    return 'Something gone wrong', 500
+    return f"Quote with id={quote_id} not found", 404
 
 
 @app.route('/filter', methods=['GET'])
@@ -184,20 +181,17 @@ def filter():
     """
     args = request.args
     quote_list = []
-    fail_flg = 0
 
-    for j in args: # итерируем по всем полям фильтрации
-        if j not in field_dict:
-            return f"Quote key '{j}' not found", 400
+    for key in args: # итерируем по всем полям фильтрации
+        if key not in field_dict:
+            return f"Quote key '{key}' not found", 400
     # на этом этапе мы определили, что все ключи из запроса - ок 
     # проверяем каждую цитату на соответствие 
     for q in quotes:
-        for k in args:
-            if str(q[k]) != str(args[k]): # всё сравниваем, приводя к строкам
-                fail_flg = 1 # разрываем цикл проверки цитаты при нахождении несовпадений
-        if fail_flg == 1:
-            fail_flg = 0 # скинули флажок, переходим к следующей цитате 
-        else:
+        for key in args:
+            if str(q[key]) != str(args[key]): # всё сравниваем, приводя к строкам
+                break
+        else: # если все проверки прошли - добавляем цитату в список
             quote_list.append(q)
 
     return quote_list
