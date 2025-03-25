@@ -177,5 +177,28 @@ def delete(quote_id):
     return 'Something gone wrong', 500
 
 
+@app.route('/filter', methods=['GET'])
+def filter():
+    args = request.args
+    print(args)
+    quote_list = []
+    fail_flg = 0
+
+    for j in args: # итерируем по всем полям фильтрации
+        if j not in field_dict:
+            return f"Quote key '{j}' not found", 400
+    # на этом этапе мы определили, что все ключи из запроса - ок 
+    # проверяем каждую цитату на соответствие 
+    for q in quotes:
+        for k in args:
+            if str(q[k]) != str(args[k]): # всё сравниваем, приводя к строкам
+                fail_flg = 1 # разрываем цикл проверки цитаты при нахождении несовпадений
+        if fail_flg == 1:
+            fail_flg = 0 # скинули флажок, переходим к следующей цитате 
+        else:
+            quote_list.append(q)
+
+    return quote_list
+
 if __name__ == "__main__":
     app.run(debug=True) 
