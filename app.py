@@ -186,15 +186,16 @@ def filter():
         if key not in field_dict:
             return f"Quote key '{key}' not found", 400
     # на этом этапе мы определили, что все ключи из запроса - ок 
-    # проверяем каждую цитату на соответствие 
-    for q in quotes:
+    # проверяем каждую цитату на соответствие
+    def flt(quote):
         for key in args:
-            if str(q[key]) != str(args[key]): # всё сравниваем, приводя к строкам
-                break
-        else: # если все проверки прошли - добавляем цитату в список
-            quote_list.append(q)
+            if str(quote[key]) != str(args[key]):
+                return False
+        return True
+    
+    quote_list = filter(flt, quotes)
 
-    return quote_list
+    return [1], 200
 
 if __name__ == "__main__":
     app.run(debug=True) 
