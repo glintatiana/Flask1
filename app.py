@@ -175,7 +175,7 @@ def delete(quote_id):
 
 
 @app.route('/filter', methods=['GET'])
-def filter():
+def my_filter():
     """
     Метод для фильтрации цитат, вовращает массив всех цитат, подходящих под условие поиска
     """
@@ -193,9 +193,9 @@ def filter():
                 return False
         return True
     
-    quote_list = filter(flt, quotes)
+    quote_list = list(filter(flt, quotes))
 
-    return [1], 200
+    return quote_list, 200
 
 if __name__ == "__main__":
     app.run(debug=True) 
