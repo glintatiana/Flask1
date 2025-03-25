@@ -7,14 +7,51 @@ app = Flask(__name__)
 app.json.ensure_ascii = False
 
 BASE_DIR = Path(__file__).parent
-path_to_db = BASE_DIR / "store.db" # <- тут путь к БД
+path_to_db = BASE_DIR / "sqlite_example/store.db" # <- тут путь к БД
 
 field_dict = ['id', 'author', 'text', 'rating']
 valid_rating = [i for i in range(1,6)]
 
 
+def get_quote_by_id(quote_id):
+    """
+    Метод для получения цитаты по ID - возвращаем объект целиком
+    """
+    # for q in quotes:
+    #     if q['id'] == quote_id:
+    #         return q
+    # return {}
+    connection = sqlite3.connect(path_to_db)
+
+    cursor = connection.cursor()
+    cursor.execute("SELECT * from quotes where id = ?", str(quote_id))
+    quote = cursor.fetchall()
+    cursor.close()
+    connection.close()
+
+    keys = ("id", "author", "text")
+    quote_dict = tuple_to_dict(keys, quote)
+
+    return quote_dict
+
+def tuple_to_dict(keys, tuple_list):
+    """
+    Метод для преобразования списка кортежей в список словарей
+    На вход - ключи + список кортежей 
+    """
+    dict_list = []
+    for dict_ in tuple_list:
+        dict_l = dict(zip(keys, dict_))
+        dict_list.append(dict_l)
+    
+    return dict_list
+
 @app.route("/quotes")
 def my_quotes():
+    """
+    Метод возвращает список всех цитат
+    Чтение идет из бд sqlite 
+    """
     connection = sqlite3.connect(path_to_db)
 
     cursor = connection.cursor()
@@ -26,21 +63,9 @@ def my_quotes():
     # подготовка данных - нужен список словарей
     # нужно преобразовать список кортежей в список словарей
     keys = ("id", "author", "text")
-    quotes = []
-    for quote_db in quotes_db:
-        quote = dict(zip(keys, quote_db))
-        quotes.append(quote)
+    quotes = tuple_to_dict(keys, quotes_db)
 
     return quotes, 200
-
-def get_quote_by_id(quote_id):
-    """
-    Метод для получения цитаты по ID - возвращаем объект целиком
-    """
-    for q in quotes:
-        if q['id'] == quote_id:
-            return q
-    return {}
 
 @app.route("/quotes/<int:quote_id>")
 def show_quote(quote_id):
