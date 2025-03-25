@@ -24,7 +24,7 @@ def get_quote_by_id(quote_id):
     connection = sqlite3.connect(path_to_db)
 
     cursor = connection.cursor()
-    cursor.execute("SELECT * from quotes where id = ?", str(quote_id))
+    cursor.execute("SELECT * from quotes where id = ?", (quote_id,))
     quote = cursor.fetchall()
     cursor.close()
     connection.close()
@@ -97,13 +97,6 @@ def show_quote_count(subpath):
         return  {"count": quotes_cnt[0]}
     return f"Page not found", 404
 
-@app.route("/quotes/rand")
-def show_rand_quote():
-    """
-    Возвращаем рандомную цитату по URL /quotes/rand
-    """
-    return random.choice(quotes)
-
 def fn_get_new_quote_id():
     """
     Метод для генерации свежего ID с условием, что максимальный всегда в конце списка
@@ -118,20 +111,40 @@ def create_quote():
 
     Возвращается создаваемый объект
     """
+    # data = request.json
+    # data['id'] = fn_get_new_quote_id()
+    # # выставляем дефолтное значение для рейтинга, если не задан 
+    # # или если задан некорректный
+    # if 'rating' not in data.keys() or data['rating'] not in valid_rating:
+    #     data['rating'] = 1
+
+    # # проверяем, все ли ключи - валидные
+    # for key in data:
+    #     if key not in field_dict:
+    #         return f"Quote key '{key}' is not valid", 400 
+
+    # quotes.append(data)
+    # return data, 201
+
     data = request.json
-    data['id'] = fn_get_new_quote_id()
-    # выставляем дефолтное значение для рейтинга, если не задан 
-    # или если задан некорректный
-    if 'rating' not in data.keys() or data['rating'] not in valid_rating:
-        data['rating'] = 1
 
-    # проверяем, все ли ключи - валидные
-    for key in data:
-        if key not in field_dict:
-            return f"Quote key '{key}' is not valid", 400 
+    connection = sqlite3.connect(path_to_db)
 
-    quotes.append(data)
-    return data, 201
+    cursor = connection.cursor()
+    cursor.execute("insert into quotes (author, text) values (?,?)",(data.get('author'), data.get('text')))
+    rowid = cursor.lastrowid
+
+    connection.commit()
+  
+    cursor.execute("SELECT * from quotes where rowid = ?", (rowid,))
+    quote = cursor.fetchall() #get list[tuple]
+
+    connection.close()
+
+    keys = ("id", "author", "text")
+    quote_list = tuple_to_dict(keys, quote)
+
+    return quote_list, 201
 
 @app.route("/quotes/<int:quote_id>", methods=['PUT'])
 def edit_quote(quote_id):
