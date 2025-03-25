@@ -86,8 +86,15 @@ def show_quote_count(subpath):
     Обрабатывает /count 
     """
     if subpath == 'count':
-        cnt_obj = {"count": len(quotes)}
-        return cnt_obj
+        connection = sqlite3.connect(path_to_db)
+
+        cursor = connection.cursor()
+        cursor.execute("SELECT count(1) from quotes")
+        quotes_cnt = cursor.fetchone() #get list[tuple]
+        cursor.close()
+        connection.close()
+
+        return  {"count": quotes_cnt[0]}
     return f"Page not found", 404
 
 @app.route("/quotes/rand")
