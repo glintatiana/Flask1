@@ -107,7 +107,8 @@ def create_quote():
         if key not in field_dict:
             return f"Quote key '{key}' is not valid", 400 
 
-    cursor = get_db().cursor()
+    connection = get_db()
+    cursor = connection.cursor()
 
     rating_norm = data.get('rating')
     if rating_norm is None or rating_norm not in range(1,6):
@@ -119,7 +120,6 @@ def create_quote():
   
     cursor.execute("SELECT * from quotes where rowid = ?", (rowid,))
     quote = cursor.fetchall() #get list[tuple]
-
 
     keys = ("id", "author", "text", "rating")
     quote_list = tuple_to_dict(keys, quote)
@@ -133,9 +133,14 @@ def edit_quote(quote_id):
     """
     new_data = request.json
 
-    cursor = get_db.cursor()
-    new_quote_data = (new_data.get('author'), new_data.get('text'))    
-    update_quote = "UPDATE quotes SET author=coalesce(?, author), text=coalesce(?, text) WHERE id=?"
+    connection = get_db()
+    cursor = connection.cursor()
+
+    rating_norm = new_data.get('rating')
+    if rating_norm is None or rating_norm not in range(1,6):
+        rating_norm = 1
+    new_quote_data = (new_data.get('author'), new_data.get('text'), rating_norm)    
+    update_quote = "UPDATE quotes SET author=coalesce(?, author), text=coalesce(?, text), rating=coalesce(?, rating) WHERE id=?"
     cursor.execute(update_quote, (*new_quote_data, quote_id))
     rowcnt = cursor.rowcount
 
@@ -151,7 +156,9 @@ def delete(quote_id):
     """
     Метод для удаления цитаты из списка по её ID через DELETE 
     """
-    cursor = get_db.cursor()
+    connection = get_db()
+    cursor = connection.cursor()
+    
     delete_quote = "delete from quotes WHERE id=?"
     cursor.execute(delete_quote, (quote_id,))
     rowcnt = cursor.rowcount
