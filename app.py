@@ -57,7 +57,7 @@ def my_quotes():
     Метод возвращает список всех цитат
     Чтение идет из бд sqlite 
     """
-    quotes_db = db.session.scalars(db.get_or_404(QuoteModel)).all()
+    quotes_db = db.session.scalars(db.select(QuoteModel)).all()
     quotes = [q.to_dict() for q in quotes_db]
 
     return quotes, 200
@@ -136,11 +136,14 @@ def my_filter():
     Метод для фильтрации цитат, вовращает массив всех цитат, подходящих под условие поиска
     """
     args = request.args
+    print(args)
+
     for key in args: # итерируем по всем полям фильтрации
          if key not in field_dict:
              return f"Quote key '{key}' not found", 400
 
-    quotes = db.session.scalars(QuoteModel).filter_by(**request.args).all()
+    # quotes = db.session.query(QuoteModel).filter_by(**request.args).all()
+    quotes = db.session.scalars(db.select(QuoteModel).filter_by(**request.args)).all()
 
     return [q.to_dict() for q in quotes], 200
 
