@@ -32,11 +32,16 @@ def get_quote_by_id(quote_id):
     cursor = connection.cursor()
     cursor.execute("SELECT * from quotes where id = ?", (quote_id,))
     quote = cursor.fetchone()
+    rowcnt = cursor.rowcount
+    
+    # для обработчиков на пустое 
+    if quote is None:
+        return {}
     cursor.close()
     connection.close()
 
     keys = ("id", "author", "text")
-    quote_dict = tuple_to_dict(keys, (quote,)) # преоьбразуем в tuple, так как возвращается только одна строка 
+    quote_dict = tuple_to_dict(keys, (quote,)) # преобразуем в tuple, так как возвращается только одна строка 
 
     return quote_dict
 
@@ -50,7 +55,7 @@ def my_quotes():
 
     cursor = connection.cursor()
     cursor.execute("SELECT * from quotes")
-    quotes_db = cursor.fetchall() #get list[tuple]
+    quotes_db = cursor.fetchall()
     cursor.close()
     connection.close()
 
@@ -95,8 +100,6 @@ def show_quote_count(subpath):
 def create_quote():
     """
     Метод для создания новой цитаты в справочнике цитат через POST
-    реализована функция fn_get_new_quote_id для генерации нового id под новую цитату
-
     Возвращается создаваемый объект
     """
     data = request.json
