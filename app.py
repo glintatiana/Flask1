@@ -50,13 +50,6 @@ class QuoteModel(db.Model):
 field_dict = ['id', 'author', 'text', 'rating']
 
 
-def get_quote_by_id(quote_id):
-    """
-    Метод для получения цитаты по ID - возвращаем объект целиком
-    """
-    quote = db.one_or_404(db.select(QuoteModel).filter_by(id=quote_id))
-
-    return quote.to_dict(), 200
 
 @app.route("/quotes")
 def my_quotes():
@@ -64,7 +57,7 @@ def my_quotes():
     Метод возвращает список всех цитат
     Чтение идет из бд sqlite 
     """
-    quotes_db = db.session.scalars(db.select(QuoteModel)).all()
+    quotes_db = db.session.scalars(db.get_or_404(QuoteModel)).all()
     quotes = [q.to_dict() for q in quotes_db]
 
     return quotes, 200
@@ -75,11 +68,10 @@ def show_quote(quote_id):
     Метод для динамического задания номера цитаты через URL /quites/номер_цитаты
     Если цитаты нет - возвращаем 404 
     """
-    ans = get_quote_by_id(quote_id)
-    if ans:
-        return ans
-    else:
-        return f"Quote with id={quote_id} not found", 404
+
+    quote = db.one_or_404(db.select(QuoteModel).filter_by(id=quote_id))
+
+    return quote.to_dict(), 200
 
 @app.route("/quotes/<path:subpath>")
 def show_quote_count(subpath):
@@ -123,9 +115,7 @@ def edit_quote(quote_id):
     if rating_norm is None or rating_norm not in range(1,6):
         rating_norm = 1
 
-    quote = db.session.get(QuoteModel, quote_id)
-    if not quote:
-         return f"Quote with id={quote_id} not found", 404
+    quote = db.get_or_404(QuoteModel, quote_id)
 
     if quote and not (set(new_data.keys()) - set (('author','text', 'rating'))):
         if 'author' in new_data.keys():
@@ -140,20 +130,36 @@ def edit_quote(quote_id):
     return quote.to_dict(), 200 
 
 
+@app.route('/filter', methods=['GET'])
+def my_filter():
+    """
+    Метод для фильтрации цитат, вовращает массив всех цитат, подходящих под условие поиска
+    """
+    args = request.args
+    for key in args: # итерируем по всем полям фильтрации
+         if key not in field_dict:
+             return f"Quote key '{key}' not found", 400
+
+    quotes = db.session.scalars(QuoteModel).filter_by(**request.args).all()
+
+    return [q.to_dict() for q in quotes], 200
+
 @app.route("/quotes/<int:quote_id>", methods=['DELETE'])
 def delete(quote_id):
     """
     Метод для удаления цитаты из списка по её ID через DELETE 
     """
 
-    quote = db.session.get(QuoteModel, quote_id)
-    if not quote:
-         return f"Quote with id={quote_id} not found", 404
+    quote = db.get_or_404(QuoteModel, quote_id)
 
     db.session.delete(quote)
-    db.session.commit()
 
-    return f"Quote with id {quote_id} is deleted.", 200
+    try:
+        db.session.commit()
+        return f"Quote with id {quote_id} is deleted.", 200
+    except Exception as e:
+        db.session.rollback()
+        return f"Database error: {e.description}", 503
     
 if __name__ == "__main__":
     app.run(debug=True) 
