@@ -10,29 +10,6 @@ BASE_DIR = Path(__file__).parent
 path_to_db = BASE_DIR / "sqlite_example/store.db" # <- тут путь к БД
 
 field_dict = ['id', 'author', 'text', 'rating']
-valid_rating = [i for i in range(1,6)]
-
-
-def get_quote_by_id(quote_id):
-    """
-    Метод для получения цитаты по ID - возвращаем объект целиком
-    """
-    # for q in quotes:
-    #     if q['id'] == quote_id:
-    #         return q
-    # return {}
-    connection = sqlite3.connect(path_to_db)
-
-    cursor = connection.cursor()
-    cursor.execute("SELECT * from quotes where id = ?", (quote_id,))
-    quote = cursor.fetchall()
-    cursor.close()
-    connection.close()
-
-    keys = ("id", "author", "text")
-    quote_dict = tuple_to_dict(keys, quote)
-
-    return quote_dict
 
 def tuple_to_dict(keys, tuple_list):
     """
@@ -45,6 +22,23 @@ def tuple_to_dict(keys, tuple_list):
         dict_list.append(dict_l)
     
     return dict_list
+
+def get_quote_by_id(quote_id):
+    """
+    Метод для получения цитаты по ID - возвращаем объект целиком
+    """
+    connection = sqlite3.connect(path_to_db)
+
+    cursor = connection.cursor()
+    cursor.execute("SELECT * from quotes where id = ?", (quote_id,))
+    quote = cursor.fetchone()
+    cursor.close()
+    connection.close()
+
+    keys = ("id", "author", "text")
+    quote_dict = tuple_to_dict(keys, (quote,)) # преоьбразуем в tuple, так как возвращается только одна строка 
+
+    return quote_dict
 
 @app.route("/quotes")
 def my_quotes():
@@ -97,12 +91,6 @@ def show_quote_count(subpath):
         return  {"count": quotes_cnt[0]}
     return f"Page not found", 404
 
-def fn_get_new_quote_id():
-    """
-    Метод для генерации свежего ID с условием, что максимальный всегда в конце списка
-    """
-    return quotes[-1]['id']+1
-
 @app.route("/quotes", methods=['POST'])
 def create_quote():
     """
@@ -111,22 +99,12 @@ def create_quote():
 
     Возвращается создаваемый объект
     """
-    # data = request.json
-    # data['id'] = fn_get_new_quote_id()
-    # # выставляем дефолтное значение для рейтинга, если не задан 
-    # # или если задан некорректный
-    # if 'rating' not in data.keys() or data['rating'] not in valid_rating:
-    #     data['rating'] = 1
-
-    # # проверяем, все ли ключи - валидные
-    # for key in data:
-    #     if key not in field_dict:
-    #         return f"Quote key '{key}' is not valid", 400 
-
-    # quotes.append(data)
-    # return data, 201
-
     data = request.json
+
+    # проверяем, все ли ключи - валидные
+    for key in data:
+        if key not in field_dict:
+            return f"Quote key '{key}' is not valid", 400 
 
     connection = sqlite3.connect(path_to_db)
 
@@ -152,61 +130,40 @@ def edit_quote(quote_id):
     Метод для изменения цитаты в словаре черех put
     """
     new_data = request.json
-    
-    quote = get_quote_by_id(quote_id)
-    if not quote:
+
+    connection = sqlite3.connect(path_to_db)
+
+    cursor = connection.cursor()
+    new_quote_data = (new_data.get('author'), new_data.get('text'))    
+    update_quote = "UPDATE quotes SET author=coalesce(?, author), text=coalesce(?, text) WHERE id=?"
+    cursor.execute(update_quote, (*new_quote_data, quote_id))
+    rowcnt = cursor.rowcount
+
+    connection.commit()
+
+    if rowcnt == 0:
         return f"Quote with id={quote_id} not found", 404
-    else:
-        for key in new_data: # итерируем по всем возможным полям
-            if key not in field_dict:
-               return f"Quote key '{key}' not found", 400 
-            if key == 'id':
-               return f"Quote key '{key}' could not be changed", 400
-            # подменяем значение, если пользователь хотит изменить на невалидный рейтинг
-            if key == 'rating' and new_data['rating'] not in valid_rating:
-               new_data['rating'] = 1
-            quote[key] = new_data[key] # создали тут объект со всеми изменениями 
-    #т теперь подменяем цитату в словаре
-    for i, q in enumerate(quotes):
-        if q['id'] == quote_id:
-            quotes[i] = quote
-            return quote, 200
-    return 'Something gone wrong', 500
+
+    return get_quote_by_id(quote_id), 200
 
 @app.route("/quotes/<int:quote_id>", methods=['DELETE'])
 def delete(quote_id):
     """
     Метод для удаления цитаты из списка по её ID через DELETE 
     """
-    for quote in quotes:
-        if quote['id'] == quote_id:
-            quotes.remove(quote)
-            return f"Quote with id {quote_id} is deleted.", 200
-    return f"Quote with id={quote_id} not found", 404
+    connection = sqlite3.connect(path_to_db)
 
+    cursor = connection.cursor()
+    delete_quote = "delete from quotes WHERE id=?"
+    cursor.execute(delete_quote, (quote_id,))
+    rowcnt = cursor.rowcount
 
-@app.route('/filter', methods=['GET'])
-def my_filter():
-    """
-    Метод для фильтрации цитат, вовращает массив всех цитат, подходящих под условие поиска
-    """
-    args = request.args
-    quote_list = []
+    connection.commit()
 
-    for key in args: # итерируем по всем полям фильтрации
-        if key not in field_dict:
-            return f"Quote key '{key}' not found", 400
-    # на этом этапе мы определили, что все ключи из запроса - ок 
-    # проверяем каждую цитату на соответствие
-    def flt(quote):
-        for key in args:
-            if str(quote[key]) != str(args[key]):
-                return False
-        return True
-    
-    quote_list = list(filter(flt, quotes))
+    if rowcnt == 0:
+        return f"Quote with id={quote_id} not found", 404
 
-    return quote_list, 200
+    return f"Quote with id {quote_id} is deleted.", 200
 
 if __name__ == "__main__":
     app.run(debug=True) 
