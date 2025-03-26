@@ -8,7 +8,8 @@ from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String
 
 import random
-import sqlite3
+
+from flask_migrate import Migrate
 
 class Base(DeclarativeBase):
     pass
@@ -19,11 +20,12 @@ path_to_db = BASE_DIR / "sqlite_example/store.db" # <- тут путь к БД
 
 app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
-app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{BASE_DIR / 'main.db'}"
+app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{BASE_DIR / 'quotes.db'}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(model_class=Base)
 db.init_app(app)
+migrate = Migrate(app, db)
 
 
 class QuoteModel(db.Model):
