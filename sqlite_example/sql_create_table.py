@@ -2,7 +2,8 @@ import sqlite3
 create_table = """
 CREATE TABLE if not exists quotes(id INTEGER PRIMARY KEY AUTOINCREMENT,
 author TEXT NOT NULL,
-text TEXT NOT NULL
+text TEXT NOT NULL,
+rating INTEGER NOT NULL
 );
 """
 # Подключение в БД

@@ -1,14 +1,14 @@
 import sqlite3
 create_quotes = """
 INSERT INTO
-quotes (author,text)
+quotes (author,text, rating)
 VALUES
 ('Rick Cook', 'Программирование сегодня — это гонка
-разработчиков программ...'),
+разработчиков программ...', 1),
 ('Waldi Ravens', 'Программирование на С похоже на быстрые танцы
-на только...'),
-('Alex Pushkin', 'Всем привет, цитата 1'),
-('Leo Tolstoy', 'Ого, цитата 2!');
+на только...', 2),
+('Alex Pushkin', 'Всем привет, цитата 1', 3),
+('Leo Tolstoy', 'Ого, цитата 2!', 4);
 """
 # Подключение в БД
 connection = sqlite3.connect("store.db")
