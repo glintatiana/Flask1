@@ -4,8 +4,8 @@ from pathlib import Path
 #sqlalchemy
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import String, ForeignKey
 
 import random
 
@@ -28,15 +28,47 @@ db.init_app(app)
 migrate = Migrate(app, db)
 
 
+# class QuoteModel(db.Model):
+#     __tablename__ = 'quotes'
+
+#     id: Mapped[int] = mapped_column(primary_key=True)
+#     author: Mapped[str] = mapped_column(String(32))
+#     text: Mapped[str] = mapped_column(String(255))
+#     rating : Mapped[int] = mapped_column(default = 1)
+
+#     def __init__(self, author, text, rating = 1):
+#         self.author = author
+#         self.text = text
+
+#     def to_dict(self):
+#         return {
+#             "id" : self.id,
+#             "author" : self.author,
+#             "text" : self.text,
+#             "rating" : self.rating
+#         }
+
+class AuthorModel(db.Model):
+    __tablename__ = 'authors'
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[int] = mapped_column(String(32), index= True, unique=True)
+    quotes: Mapped[list['QuoteModel']] =  relationship( back_populates='author', lazy='dynamic')
+
+    def __init__(self, name):
+        self.name = name
+
+    def to_dict(self):
+        return {
+            "name" : self.name
+        }
 class QuoteModel(db.Model):
     __tablename__ = 'quotes'
-
     id: Mapped[int] = mapped_column(primary_key=True)
-    author: Mapped[str] = mapped_column(String(32))
+    author_id: Mapped[str] = mapped_column(ForeignKey('authors.id'))
+    author: Mapped['AuthorModel'] = relationship(back_populates='quotes')
     text: Mapped[str] = mapped_column(String(255))
-    rating : Mapped[int] = mapped_column(default = 1)
 
-    def __init__(self, author, text, rating = 1):
+    def __init__(self, author, text):
         self.author = author
         self.text = text
 
@@ -47,7 +79,6 @@ class QuoteModel(db.Model):
             "text" : self.text,
             "rating" : self.rating
         }
-
 
 field_dict = ['id', 'author', 'text', 'rating']
 
