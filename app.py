@@ -68,7 +68,7 @@ class QuoteModel(db.Model):
     author_id: Mapped[str] = mapped_column(ForeignKey('authors.id'))
     author: Mapped['AuthorModel'] = relationship(back_populates='quotes')
     text: Mapped[str] = mapped_column(String(255))
-    # rating: Mapped[int] = mapped_column(Integer, default = 1, nullable = True)
+    rating: Mapped[int] = mapped_column(nullable = False, server_default = '1')
 
     def __init__(self, author, text):
         self.author = author
