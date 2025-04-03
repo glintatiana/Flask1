@@ -59,6 +59,7 @@ class AuthorModel(db.Model):
 
     def to_dict(self):
         return {
+             "id"  : self.id,
             "name" : self.name
         }
 class QuoteModel(db.Model):
@@ -75,9 +76,7 @@ class QuoteModel(db.Model):
     def to_dict(self):
         return {
             "id" : self.id,
-            "author" : self.author,
-            "text" : self.text,
-            "rating" : self.rating
+            "text" : self.text
         }
 
 field_dict = ['id', 'author', 'text', 'rating']
@@ -94,6 +93,20 @@ def my_quotes():
     quotes = [q.to_dict() for q in quotes_db]
 
     return quotes, 200
+
+@app.route("/authors/<int:author_id>/quotes")
+def my_author_quotes(author_id):
+    """
+    Метод возвращает список всех цитат
+    Чтение идет из бд sqlite 
+    """
+    author = db.session.get(AuthorModel, author_id)
+    
+    quotes = []
+    for quote in author.quotes:
+        quotes.append(quote.to_dict())
+
+    return {'author': [author.to_dict()], 'quotes' : quotes}, 200
 
 @app.route("/quotes/<int:quote_id>")
 def show_quote(quote_id):
