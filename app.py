@@ -5,7 +5,7 @@ from pathlib import Path
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import String, ForeignKey
+from sqlalchemy import String, ForeignKey, Integer
 
 import random
 
@@ -68,7 +68,7 @@ class QuoteModel(db.Model):
     author_id: Mapped[str] = mapped_column(ForeignKey('authors.id'))
     author: Mapped['AuthorModel'] = relationship(back_populates='quotes')
     text: Mapped[str] = mapped_column(String(255))
-    rating: Mapped[int] = mapped_column(default = 1, nullable = True)
+    rating: Mapped[int] = mapped_column(Integer, default = 1, nullable = True)
 
     def __init__(self, author, text):
         self.author = author
