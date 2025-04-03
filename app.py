@@ -68,7 +68,7 @@ class QuoteModel(db.Model):
     author_id: Mapped[str] = mapped_column(ForeignKey('authors.id'))
     author: Mapped['AuthorModel'] = relationship(back_populates='quotes')
     text: Mapped[str] = mapped_column(String(255))
-    rating: Mapped[int] = mapped_column(Integer, default = 1, nullable = True)
+    # rating: Mapped[int] = mapped_column(Integer, default = 1, nullable = True)
 
     def __init__(self, author, text):
         self.author = author
@@ -90,8 +90,11 @@ def my_quotes():
     Метод возвращает список всех цитат
     Чтение идет из бд sqlite 
     """
+    quotes = []
     quotes_db = db.session.scalars(db.select(QuoteModel)).all()
-    quotes = [q.to_dict() for q in quotes_db]
+
+    for q in quotes_db:
+        quotes.append(q.to_dict())
 
     return quotes, 200
 
