@@ -90,10 +90,10 @@ def my_quotes():
     Метод возвращает список всех цитат
     Чтение идет из бд sqlite 
     """
-    # quotes_db = db.session.scalars(db.select(QuoteModel)).all()
-    # quotes = [q.to_dict() for q in quotes_db]
+    quotes_db = db.session.scalars(db.select(QuoteModel)).all()
+    quotes = [q.to_dict() for q in quotes_db]
 
-    return [], 200
+    return quotes, 200
 
 @app.route("/authors/<int:author_id>/quotes")
 def my_author_quotes(author_id):
